@@ -40,7 +40,7 @@ export default function Portal() {
           <div key={p.id} style={{ background: '#14141a', border: '1px solid #26262e', borderRadius: 10, padding: 20 }}>
             <div style={{ fontFamily: 'Georgia, serif', fontSize: 20, color: '#d4a853' }}>{p.address}</div>
             <div style={{ color: '#8e8a7d', fontSize: 14, marginTop: 4 }}>
-              {p.units} unit{p.units === 1 ? '' : 's'} · Rent: ${p.monthly_rent ?? '—'}/mo · Status: {p.status ?? 'active'}
+              {p.units_count} unit{p.units_count === 1 ? '' : 's'} · Rent: ${p.monthly_rent ?? '—'}/mo · Status: {p.status ?? 'active'}
             </div>
           </div>
         ))}

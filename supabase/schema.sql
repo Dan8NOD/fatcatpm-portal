@@ -1,3 +1,8 @@
+-- STALE — do not run. Checked live 2026-07-27: properties/property_owners
+-- already exist on the shared project with a normalized shape (owner_id ->
+-- property_owners.id -> user_id = auth.uid()), not the owner_email column
+-- below. Running this errors on the CREATE POLICY line (no such column).
+-- Kept for history only. See README.md.
 -- FatCat PM owner portal — run once in Supabase SQL editor
 create table if not exists properties (
   id bigint generated always as identity primary key,
