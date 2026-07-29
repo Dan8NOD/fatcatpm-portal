@@ -1,5 +1,5 @@
 'use client';
-// ponytail: weekly report upload — auto-calculates totals
+// ponytail: weekly report upload — auto-calculates totals, uploads photos to Supabase storage
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { sb } from '../../../../lib/supabase';
@@ -8,6 +8,9 @@ import { adminApi } from '../../../../lib/admin';
 export default function UploadReport() {
   const { id } = useParams();
   const [property, setProperty] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadedUrls, setUploadedUrls] = useState([]);
   const [form, setForm] = useState({
     week_of: getMonday(new Date()),
     rent_in: '',
@@ -29,9 +32,28 @@ export default function UploadReport() {
     });
   }, [id]);
 
+  async function uploadPhotos() {
+    if (files.length === 0) return [];
+    setUploading(true);
+    const urls = [];
+    for (const file of files) {
+      const ext = file.name.split('.').pop();
+      const path = `${id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await sb.storage.from('report-photos').upload(path, file, { upsert: false });
+      if (error) { setMsg(`Photo upload failed: ${error.message}`); continue; }
+      const { data: pub } = sb.storage.from('report-photos').getPublicUrl(path);
+      urls.push(pub.publicUrl);
+    }
+    setUploading(false);
+    setUploadedUrls(urls);
+    return urls;
+  }
+
   async function submit(e) {
     e.preventDefault();
-    setMsg('Saving…');
+    setMsg('Uploading photos…');
+    const urls = await uploadPhotos();
+    setMsg('Saving report…');
     const rentIn = parseFloat(form.rent_in) || 0;
     const rentOut = parseFloat(form.expenses) || 0;
     const net = rentIn - rentOut;
@@ -48,9 +70,25 @@ export default function UploadReport() {
         net,
         occupancy_pct: parseInt(form.occupancy_pct) || 0,
       },
+      photos: urls,
     });
     if (r.error) setMsg('Error: ' + r.error.message);
-    else setMsg('✓ Report saved. Email owner at ' + property?.owner_email + '?');
+    else {
+      // ponytail: fire-and-forget email digest — don't block save on Resend
+      fetch('/api/notify-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          owner_email: property?.owner_email,
+          property_address: property?.address,
+          week_of: form.week_of,
+          net,
+          notes: form.notes,
+          photos_count: urls.length,
+        }),
+      }).catch(() => {});
+      setMsg(`✓ Report saved with ${urls.length} photo${urls.length === 1 ? '' : 's'}. Email sent to ${property?.owner_email}.`);
+    }
   }
 
   return (
@@ -86,8 +124,14 @@ export default function UploadReport() {
             style={{ ...inputStyle, fontFamily: 'Inter, system-ui, sans-serif', resize: 'vertical' }}
             placeholder="What the owner needs to know this week…" />
         </Field>
-        <button type="submit" style={{ ...inputStyle, background: '#d4a853', color: '#0a0a0c', fontWeight: 600, letterSpacing: 1, cursor: 'pointer', textTransform: 'uppercase' }}>
-          Save Report
+        <Field label="Photos (optional — work completed, before/after)">
+          <input type="file" multiple accept="image/*" onChange={e => setFiles(Array.from(e.target.files))}
+            style={{ ...inputStyle, padding: 8 }} />
+          {files.length > 0 && <div style={{ color: '#8e8a7d', fontSize: 12, marginTop: 4 }}>{files.length} file{files.length === 1 ? '' : 's'} ready</div>}
+        </Field>
+        <button type="submit" disabled={uploading}
+          style={{ ...inputStyle, background: '#d4a853', color: '#0a0a0c', fontWeight: 600, letterSpacing: 1, cursor: uploading ? 'default' : 'pointer', textTransform: 'uppercase', opacity: uploading ? 0.6 : 1 }}>
+          {uploading ? 'Uploading…' : 'Save Report'}
         </button>
         {msg && <div style={{ color: msg.startsWith('Error') ? '#e57373' : '#d4a853', fontSize: 13 }}>{msg}</div>}
       </form>

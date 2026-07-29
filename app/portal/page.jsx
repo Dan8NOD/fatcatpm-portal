@@ -25,10 +25,13 @@ export default function Portal() {
           <div style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: '#d4a853' }}>FatCat PM</div>
           <h1 style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 28, margin: 0 }}>Your Properties</h1>
         </div>
-        <button onClick={() => { sb.auth.signOut(); location.href = '/'; }}
-          style={{ background: 'none', border: '1px solid #26262e', color: '#8e8a7d', padding: '8px 16px', borderRadius: 6, cursor: 'pointer' }}>
-          Sign out
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <a href="/portal/tickets" style={{ color: '#8e8a7d', padding: '8px 14px', border: '1px solid #26262e', borderRadius: 6, textDecoration: 'none', fontSize: 12 }}>Tickets</a>
+          <button onClick={() => { sb.auth.signOut(); location.href = '/'; }}
+            style={{ background: 'none', border: '1px solid #26262e', color: '#8e8a7d', padding: '8px 16px', borderRadius: 6, cursor: 'pointer' }}>
+            Sign out
+          </button>
+        </div>
       </div>
       {props.length === 0 && (
         <p style={{ color: '#8e8a7d', marginTop: 32 }}>No properties linked to {session?.user?.email} yet — contact FatCat PM to get connected.</p>

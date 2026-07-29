@@ -68,5 +68,22 @@ export async function POST(request) {
     const { data, error } = await sb.from('reports').select('*').eq('property_id', property_id).order('week_of', { ascending: false });
     return Response.json({ data, error });
   }
+  // ponytail: tickets admin actions — single switch, append when needed
+  if (action === 'list_all_tickets') {
+    const { data, error } = await sb.from('tickets').select('*, properties(address, owner_email)').order('created_at', { ascending: false });
+    return Response.json({ data, error });
+  }
+  if (action === 'update_ticket_status') {
+    const { id, status } = payload;
+    const update = { status };
+    if (status === 'resolved') update.resolved_at = new Date().toISOString();
+    const { data, error } = await sb.from('tickets').update(update).eq('id', id).select();
+    return Response.json({ data, error });
+  }
+  if (action === 'delete_ticket') {
+    const { id } = payload;
+    const { error } = await sb.from('tickets').delete().eq('id', id);
+    return Response.json({ error });
+  }
   return Response.json({ error: 'unknown action' }, { status: 400 });
 }

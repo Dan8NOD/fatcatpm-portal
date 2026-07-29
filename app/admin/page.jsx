@@ -7,7 +7,7 @@ import { adminApi } from '../../lib/admin';
 export default function Admin() {
   const [session, setSession] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [data, setData] = useState({ properties: [], referrals: [] });
+  const [data, setData] = useState({ properties: [], referrals: [], tickets: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,7 +19,8 @@ export default function Admin() {
       if (probe.error === 'unauthorized') { location.href = '/'; return; }
       setIsAdmin(true);
       const refs = await adminApi('list_all_referrals', {});
-      setData({ properties: probe.data || [], referrals: refs.data || [] });
+      const tickets = await adminApi('list_all_tickets', {});
+      setData({ properties: probe.data || [], referrals: refs.data || [], tickets: tickets.data || [] });
       setLoading(false);
     });
   }, []);
@@ -31,6 +32,7 @@ export default function Admin() {
     totalRent: data.properties.reduce((sum, p) => sum + (parseFloat(p.monthly_rent) || 0), 0),
     refsPending: data.referrals.filter(r => r.status === 'pending').length,
     refsClosed: data.referrals.filter(r => r.status === 'closed').length,
+    ticketsOpen: data.tickets ? data.tickets.filter(t => t.status === 'open' || t.status === 'in_progress').length : 0,
   };
 
   return (
@@ -42,6 +44,7 @@ export default function Admin() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <a href="/admin/properties" style={{ color: '#8e8a7d', padding: '8px 14px', border: '1px solid #26262e', borderRadius: 6, textDecoration: 'none', fontSize: 12 }}>Properties</a>
+          <a href="/admin/tickets" style={{ color: '#8e8a7d', padding: '8px 14px', border: '1px solid #26262e', borderRadius: 6, textDecoration: 'none', fontSize: 12 }}>Tickets</a>
           <a href="/admin/referrals" style={{ color: '#8e8a7d', padding: '8px 14px', border: '1px solid #26262e', borderRadius: 6, textDecoration: 'none', fontSize: 12 }}>Referrals</a>
           <button onClick={() => sb.auth.signOut().then(() => location.href = '/')}
             style={{ background: 'none', border: '1px solid #26262e', color: '#8e8a7d', padding: '8px 14px', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}>
@@ -54,8 +57,8 @@ export default function Admin() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 0, border: '1px solid #26262e', marginTop: 24, borderRadius: 10, overflow: 'hidden' }}>
         <Stat n={stats.active} label="Active Properties" />
         <Stat n={'$' + stats.totalRent.toLocaleString()} label="Total Monthly Rent" />
-        <Stat n={stats.refsPending} label="Referrals Pending" />
-        <Stat n={stats.refsClosed} label="Referrals Closed" />
+        <Stat n={stats.ticketsOpen} label="Tickets Open" />
+        <Stat n={stats.refsClosed + '/' + (stats.refsPending + stats.refsClosed)} label="Referrals" />
       </div>
 
       {/* Properties list */}

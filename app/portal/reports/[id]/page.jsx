@@ -70,14 +70,25 @@ export default function ReportsPage() {
                   <div><span style={{ color: C.muted }}>Occupancy: </span><span>{r.totals.occupancy_pct || 0}%</span></div>
                 </div>
               )}
-              {r.body?.notes && <p style={{ color: C.text, fontSize: 14, lineHeight: 1.6, margin: '12px 0' }}>{r.body.notes}</p>}
+              {r.body?.notes && <p style={{ color: '#f4f1ea', fontSize: 14, lineHeight: 1.6, margin: '12px 0' }}>{r.body.notes}</p>}
               {r.body?.work_orders && r.body.work_orders.length > 0 && (
                 <details style={{ marginTop: 8 }}>
-                  <summary style={{ color: C.muted, fontSize: 12, cursor: 'pointer', letterSpacing: 1 }}>{r.body.work_orders.length} work order{r.body.work_orders.length === 1 ? '' : 's'}</summary>
-                  <ul style={{ marginTop: 8, paddingLeft: 20, color: C.muted, fontSize: 13 }}>
+                  <summary style={{ color: '#8e8a7d', fontSize: 12, cursor: 'pointer', letterSpacing: 1 }}>{r.body.work_orders.length} work order{r.body.work_orders.length === 1 ? '' : 's'}</summary>
+                  <ul style={{ marginTop: 8, paddingLeft: 20, color: '#8e8a7d', fontSize: 13 }}>
                     {r.body.work_orders.map((w, i) => <li key={i}>{w}</li>)}
                   </ul>
                 </details>
+              )}
+              {r.photos && r.photos.length > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 6, marginTop: 12 }}>
+                  {r.photos.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt={`Work photo ${i + 1}`} loading="lazy"
+                        style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 6, border: '1px solid #26262e' }} />
+                    </a>
+                  ))}
+                </div>
               )}
             </div>
           ))}
