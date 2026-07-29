@@ -85,5 +85,41 @@ export async function POST(request) {
     const { error } = await sb.from('tickets').delete().eq('id', id);
     return Response.json({ error });
   }
+  // ponytail: monthly revenue ledger (admin-only)
+  if (action === 'save_monthly_ledger') {
+    const { month, revenue, expenses } = payload;
+    const rev = await sb.from('revenue_entries').upsert(
+      revenue.map(r => ({ ...r, month })), { onConflict: 'month,vertical' }
+    );
+    if (rev.error) return Response.json({ error: rev.error });
+    const exp = await sb.from('expense_entries').upsert(
+      expenses.map(e => ({ ...e, month })), { onConflict: 'month,category' }
+    );
+    if (exp.error) return Response.json({ error: exp.error });
+    return Response.json({ ok: true });
+  }
+  if (action === 'list_revenue_for_month') {
+    const { month } = payload;
+    const { data, error } = await sb.from('revenue_entries').select('*').eq('month', month);
+    return Response.json({ data, error });
+  }
+  if (action === 'list_expenses_for_month') {
+    const { month } = payload;
+    const { data, error } = await sb.from('expense_entries').select('*').eq('month', month);
+    return Response.json({ data, error });
+  }
+  if (action === 'list_revenue_history') {
+    const { data, error } = await sb.from('revenue_entries').select('month, amount');
+    if (error) return Response.json({ error });
+    const { data: expData, error: expErr } = await sb.from('expense_entries').select('month, amount');
+    if (expErr) return Response.json({ error: expErr });
+    const byMonth = {};
+    for (const r of data || []) byMonth[r.month] = { month: r.month, revenue: 0, expenses: 0 };
+    for (const e of expData || []) byMonth[e.month] = { month: e.month, revenue: 0, expenses: 0, ...byMonth[e.month] };
+    for (const r of data || []) byMonth[r.month].revenue += Number(r.amount);
+    for (const e of expData || []) byMonth[e.month].expenses += Number(e.amount);
+    const out = Object.values(byMonth).map(m => ({ ...m, net: m.revenue - m.expenses })).sort((a, b) => b.month.localeCompare(a.month));
+    return Response.json({ data: out });
+  }
   return Response.json({ error: 'unknown action' }, { status: 400 });
 }

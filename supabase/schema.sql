@@ -1,7 +1,7 @@
 -- FatCat PM owner portal — run once in Supabase SQL editor
 -- ponytail: all tables + RLS + storage in one file, run idempotently
 
--- ============== PROPERTIES (existing) ==============
+-- ============== PROPERTIES ==============
 create table if not exists properties (
   id bigint generated always as identity primary key,
   owner_email text not null,
@@ -26,7 +26,7 @@ create table if not exists reports (
   week_of date not null,
   body jsonb not null,
   totals jsonb,
-  photos text[] default '{}',    -- ponytail: array of storage URLs
+  photos text[] default '{}',
   created_at timestamptz default now()
 );
 create index if not exists reports_property_id_idx on reports(property_id);
@@ -61,23 +61,21 @@ create table if not exists referrals (
 );
 alter table referrals enable row level security;
 
--- ============== TICKETS (new — maintenance requests) ==============
--- ponytail: simple kanban — open → in_progress → resolved
+-- ============== TICKETS ==============
 create table if not exists tickets (
   id bigint generated always as identity primary key,
   property_id bigint references properties(id) on delete cascade,
   title text not null,
   description text,
-  priority text default 'normal',     -- low | normal | high | urgent
-  status text default 'open',         -- open | in_progress | resolved | cancelled
-  created_by text,                    -- email of whoever opened it (owner or admin)
+  priority text default 'normal',
+  status text default 'open',
+  created_by text,
   resolved_at timestamptz,
   created_at timestamptz default now()
 );
 create index if not exists tickets_property_id_idx on tickets(property_id);
 create index if not exists tickets_status_idx on tickets(status);
 alter table tickets enable row level security;
--- ponytail: owners see their property's tickets, admins see all (via service key)
 drop policy if exists "owner read own tickets" on tickets;
 create policy "owner read own tickets" on tickets for select
   using (
@@ -87,7 +85,6 @@ create policy "owner read own tickets" on tickets for select
         and properties.owner_email = auth.jwt() ->> 'email'
     )
   );
--- ponytail: owners can CREATE tickets for their properties (status defaults open)
 drop policy if exists "owner open ticket" on tickets;
 create policy "owner open ticket" on tickets for insert
   with check (
@@ -107,18 +104,49 @@ insert into admin_emails (email) values
   ('dancruzhomes@gmail.com')
 on conflict do nothing;
 
--- ============== STORAGE BUCKET (new — report photos) ==============
--- ponytail: idempotent bucket + RLS — owners upload to their own folder
+-- ============== STORAGE ==============
 insert into storage.buckets (id, name, public)
 values ('report-photos', 'report-photos', true)
 on conflict (id) do nothing;
 
--- Anyone can read (public bucket — house pics aren't sensitive)
 drop policy if exists "report photos public read" on storage.objects;
 create policy "report photos public read" on storage.objects for select
   using (bucket_id = 'report-photos');
 
--- Admin writes via service key (bypasses RLS), users can upload to their own folder
 drop policy if exists "report photos owner write" on storage.objects;
 create policy "report photos owner write" on storage.objects for insert
   with check (bucket_id = 'report-photos' and auth.role() = 'authenticated');
+
+-- ============== REVENUE LEDGER (new — Monthly Revenue Tracker) ==============
+-- ponytail: one row per revenue source per month. Vertical = business stream.
+create table if not exists revenue_entries (
+  id bigint generated always as identity primary key,
+  month date not null,              -- first day of the month (2026-08-01)
+  vertical text not null,           -- 'token_broker' | 'nod_academy' | 'coaching' | 'manual_kindle' | 'manual_gumroad' | 'agent_script' | 'negotiator_challenge' | 'real_estate' | 'other'
+  amount numeric not null default 0,
+  transactions int default 0,
+  notes text,
+  created_at timestamptz default now(),
+  unique(month, vertical)
+);
+create index if not exists revenue_month_idx on revenue_entries(month desc);
+alter table revenue_entries enable row level security;
+-- ponytail: admin-only via service key — no anon policy = RLS denies anon
+drop policy if exists "anon read revenue" on revenue_entries;
+create policy "anon read revenue" on revenue_entries for select to anon using (false);
+create policy "service role all revenue" on revenue_entries for all to service_role using (true) with check (true);
+
+create table if not exists expense_entries (
+  id bigint generated always as identity primary key,
+  month date not null,
+  category text not null,           -- 'supabase' | 'vercel' | 'github' | 'domain' | 'stripe_fees' | 'zoom' | 'video_editor' | 'va' | 'bookkeeper' | 'software' | 'marketing' | 'other'
+  amount numeric not null default 0,
+  notes text,
+  created_at timestamptz default now(),
+  unique(month, category)
+);
+create index if not exists expense_month_idx on expense_entries(month desc);
+alter table expense_entries enable row level security;
+drop policy if exists "anon read expenses" on expense_entries;
+create policy "anon read expenses" on expense_entries for select to anon using (false);
+create policy "service role all expenses" on expense_entries for all to service_role using (true) with check (true);
