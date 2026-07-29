@@ -1,9 +1,7 @@
 'use client';
 // ponytail: owner dashboard — reads their properties + latest statement via RLS
 import { useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+import { sb } from '../../lib/supabase';
 
 export default function Portal() {
   const [session, setSession] = useState(null);
@@ -42,6 +40,9 @@ export default function Portal() {
             <div style={{ color: '#8e8a7d', fontSize: 14, marginTop: 4 }}>
               {p.units_count} unit{p.units_count === 1 ? '' : 's'} · Rent: ${p.monthly_rent ?? '—'}/mo · Status: {p.status ?? 'active'}
             </div>
+            <a href={`/portal/reports/${p.id}`} style={{ display: 'inline-block', marginTop: 12, color: '#d4a853', fontSize: 13, textDecoration: 'none' }}>
+              View weekly reports →
+            </a>
           </div>
         ))}
       </div>

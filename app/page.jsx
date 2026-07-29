@@ -18,7 +18,7 @@ export default function Login() {
     <main style={{ maxWidth: 400, margin: '15vh auto', padding: 24 }}>
       <div style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: '#d4a853', marginBottom: 8 }}>FatCat PM</div>
       <h1 style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 32 }}>Owner Portal</h1>
-      <p style={{ color: '#8e8a7d', fontSize: 14 }}>Enter your email — we'll send a sign-in link.</p>
+      <p style={{ color: '#8e8a7d', fontSize: 14 }}>Enter your email — we'll send a sign-in link. No password to remember.</p>
       <form onSubmit={send} style={{ display: 'grid', gap: 12, marginTop: 24 }}>
         <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@email.com"
           style={{ padding: 12, background: '#14141a', border: '1px solid #26262e', color: '#f4f1ea', borderRadius: 6, fontSize: 16 }} />
