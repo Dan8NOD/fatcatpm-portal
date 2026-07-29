@@ -1,0 +1,28 @@
+# FatCat Property Management
+
+> FatCat PM manages residential properties for out-of-state owners in Chicago and the Midwest. Owners get a portal with their properties, weekly reports, and a maintenance ticket system. Owner login: magic-link (no password). Admin login: email in the admin_emails table.
+
+## Key URLs
+- Marketing site: https://fatcatpm.com
+- Owner portal: https://portal-fatcatpm.vercel.app
+- Owner login: https://portal-fatcatpm.vercel.app/ (magic link)
+- Admin dashboard: https://portal-fatcatpm.vercel.app/admin
+
+## What this is
+- Property management company, residential only
+- Weekly owner reports with rent/expense totals and work orders
+- Photo attachments on reports via Supabase storage
+- Email digest to owner on every new report (via Resend)
+- 4-column kanban for maintenance tickets (open, in_progress, resolved, cancelled)
+- Out-of-state referral pipeline for partner brokers
+
+## Tech
+- Next.js 14 on Vercel
+- Supabase (auth, Postgres, storage)
+- Resend for owner emails
+- Stripe NOT used here (Stripe is on the dancruzhomes.com grader)
+
+## Related
+- Parent: https://fatcatam.com (FatCat Asset Management)
+- Sister: https://dancruzhomes.com (Dan Cruz Homes)
+- Negotiation training: https://negotiatorsondemand.com

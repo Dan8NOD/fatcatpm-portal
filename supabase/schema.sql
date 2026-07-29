@@ -9,12 +9,15 @@ create table if not exists properties (
   units int default 1,
   monthly_rent numeric,
   status text default 'active',
+  notes text,                       -- ponytail: admin-only scratchpad (handyman codes, etc.)
   created_at timestamptz default now()
 );
 alter table properties enable row level security;
 drop policy if exists "owner read own" on properties;
 create policy "owner read own" on properties for select
   using (owner_email = auth.jwt() ->> 'email');
+-- ponytail: owners do NOT see notes — only admins read via service key.
+-- No additional anon policy on notes = RLS denies it. Safe by default.
 
 -- ============== REPORTS ==============
 create table if not exists reports (

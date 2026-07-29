@@ -1,5 +1,5 @@
 'use client';
-// ponytail: admin add property form
+// ponytail: admin add property form + inline notes editor
 import { useEffect, useState } from 'react';
 import { sb } from '../../../lib/supabase';
 import { adminApi } from '../../../lib/admin';
@@ -7,16 +7,21 @@ import { adminApi } from '../../../lib/admin';
 export default function NewProperty() {
   const [session, setSession] = useState(null);
   const [props, setProps] = useState([]);
-  const [form, setForm] = useState({ owner_email: '', address: '', units: 1, monthly_rent: '', status: 'active' });
+  const [form, setForm] = useState({ owner_email: '', address: '', units: 1, monthly_rent: '', status: 'active', notes: '' });
   const [msg, setMsg] = useState('');
+  const [editingNotes, setEditingNotes] = useState(null);  // { id, notes }
+
+  async function load() {
+    const r = await adminApi('list_all_properties', {});
+    if (r.error === 'unauthorized') { location.href = '/'; return; }
+    setProps(r.data || []);
+  }
 
   useEffect(() => {
     sb.auth.getSession().then(async ({ data }) => {
       if (!data.session) { location.href = '/'; return; }
       setSession(data.session);
-      const r = await adminApi('list_all_properties', {});
-      if (r.error === 'unauthorized') { location.href = '/'; return; }
-      setProps(r.data || []);
+      load();
     });
   }, []);
 
@@ -31,8 +36,16 @@ export default function NewProperty() {
     else {
       setMsg('✓ Saved');
       setProps([r.data[0], ...props]);
-      setForm({ owner_email: '', address: '', units: 1, monthly_rent: '', status: 'active' });
+      setForm({ owner_email: '', address: '', units: 1, monthly_rent: '', status: 'active', notes: '' });
     }
+  }
+
+  async function saveNotes() {
+    if (!editingNotes) return;
+    const r = await adminApi('update_property', { id: editingNotes.id, notes: editingNotes.notes });
+    if (r.error) { alert('Error: ' + r.error.message); return; }
+    setEditingNotes(null);
+    load();
   }
 
   return (
@@ -67,6 +80,11 @@ export default function NewProperty() {
             <option value="offboard">Off-boarding</option>
           </select>
         </Field>
+        <Field label="Admin notes (handyman codes, lockbox combo, etc.)">
+          <textarea rows={3} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
+            style={{ ...inputStyle, fontFamily: 'Inter, system-ui, sans-serif', resize: 'vertical' }}
+            placeholder="Lockbox 4477, basement key under mat…" />
+        </Field>
         <button type="submit" style={{ ...inputStyle, background: '#d4a853', color: '#0a0a0c', fontWeight: 600, letterSpacing: 1, cursor: 'pointer', textTransform: 'uppercase' }}>
           Add Property
         </button>
@@ -77,10 +95,38 @@ export default function NewProperty() {
       <div style={{ display: 'grid', gap: 8 }}>
         {props.map(p => (
           <div key={p.id} style={{ background: '#14141a', border: '1px solid #26262e', borderRadius: 8, padding: 14, fontSize: 14 }}>
-            <span style={{ color: '#d4a853' }}>{p.address}</span> · {p.owner_email} · ${p.monthly_rent ?? '—'}/mo
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <div>
+                <span style={{ color: '#d4a853' }}>{p.address}</span> · {p.owner_email} · ${p.monthly_rent ?? '—'}/mo
+              </div>
+              <button onClick={() => setEditingNotes({ id: p.id, notes: p.notes || '' })}
+                style={{ background: 'none', border: '1px solid #26262e', color: '#8e8a7d', padding: '4px 10px', borderRadius: 4, fontSize: 11, cursor: 'pointer' }}>
+                Notes
+              </button>
+            </div>
+            {p.notes && !editingNotes && (
+              <div style={{ color: '#8e8a7d', fontSize: 12, marginTop: 6, whiteSpace: 'pre-wrap' }}>{p.notes}</div>
+            )}
           </div>
         ))}
       </div>
+
+      {/* Notes editor modal */}
+      {editingNotes && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ background: '#14141a', border: '1px solid #26262e', borderRadius: 10, padding: 24, maxWidth: 600, width: '100%' }}>
+            <h3 style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 20, margin: '0 0 12px' }}>Admin Notes</h3>
+            <p style={{ color: '#8e8a7d', fontSize: 12, marginBottom: 12 }}>Owner never sees this. Lockbox codes, handyman access, key locations.</p>
+            <textarea autoFocus rows={8} value={editingNotes.notes}
+              onChange={e => setEditingNotes({ ...editingNotes, notes: e.target.value })}
+              style={{ ...inputStyle, fontFamily: 'Inter, system-ui, sans-serif', resize: 'vertical' }} />
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <button onClick={saveNotes} style={{ ...inputStyle, background: '#d4a853', color: '#0a0a0c', fontWeight: 600, letterSpacing: 1, cursor: 'pointer', textTransform: 'uppercase' }}>Save</button>
+              <button onClick={() => setEditingNotes(null)} style={{ ...inputStyle, background: 'transparent', border: '1px solid #26262e', color: '#8e8a7d', cursor: 'pointer' }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

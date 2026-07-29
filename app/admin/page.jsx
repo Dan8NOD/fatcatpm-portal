@@ -75,6 +75,7 @@ export default function Admin() {
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <a href={`/admin/upload-report/${p.id}`} style={{ background: '#d4a853', color: '#0a0a0c', padding: '8px 14px', borderRadius: 6, textDecoration: 'none', fontSize: 12, fontWeight: 600, letterSpacing: 1 }}>+ Report</a>
+              <a href={`/statement/${p.id}`} style={{ color: '#8e8a7d', padding: '8px 14px', border: '1px solid #26262e', borderRadius: 6, textDecoration: 'none', fontSize: 12 }}>Statement</a>
               <a href={`/portal/reports/${p.id}`} style={{ color: '#8e8a7d', padding: '8px 14px', border: '1px solid #26262e', borderRadius: 6, textDecoration: 'none', fontSize: 12 }}>View</a>
             </div>
           </div>
